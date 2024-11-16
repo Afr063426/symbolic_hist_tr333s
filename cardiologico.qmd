@@ -1,0 +1,186 @@
+---
+title: "Datos cardiologicos"
+format: html
+author: "Joshua Cervantes Artavia"
+date: 20-10-2024
+---
+
+
+```{r}
+# Se ejecuta el codigo set up
+source("./R/hist_tree.r")
+# Se procede a cargar los datos
+
+```
+
+
+```{r datos}
+
+# Se crea la tabla de pacientes de Diday y Billard
+pulso_cardiaco = c(
+    vctrs::new_vctr(list(list(breaks = c(44,60,68), props = c(0.8, 0.2))), class = "symbolic_histogram"), 
+    vctrs::new_vctr(list(list(breaks = c(60,70,72), props = c(0.5, 0.5))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(56,80,90), props = c(0.6, 0.4))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(70,75,112), props = c(0.4, 0.6))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(54,56,72), props = c(0.2, 0.8))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(70,80,100), props = c(0.5, 0.5))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(63,73,75), props = c(0.4, 0.6))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(72,79,100), props = c(0.5, 0.5))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(76,80,98), props = c(0.2, 0.8))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(86,94,96), props = c(0.8, 0.2))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(86,89,89), props = c(0.6, 0.4))), class = "symbolic_histogram")
+    )
+
+presion_sistolica <- c(
+    vctrs::new_vctr(list(list(breaks = c(90,95,100), props = c(0.2, 0.8))), class = "symbolic_histogram"), 
+    vctrs::new_vctr(list(list(breaks = c(90,110,110), props = c(0.4, 0.6))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(140,160,180), props = c(0.5, 0.5))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(110,120,142), props = c(0.2, 0.8))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(90,98,100), props = c(0.6, 0.4))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(130,150,160), props = c(0.4, 0.6))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(140,145,150), props = c(0.2, 0.8))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(130,140,160), props = c(0.4, 0.8))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(110,160,190), props = c(0.5, 0.5))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(138,142,180), props = c(0.5, 0.5))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(110,135,150), props = c(0.2, 0.8))), class = "symbolic_histogram")
+    )
+
+presion_diastolica <- c(
+    vctrs::new_vctr(list(list(breaks = c(50,60,70), props = c(0.4, 0.6))), class = "symbolic_histogram"), 
+    vctrs::new_vctr(list(list(breaks = c(70,80,90), props = c(0.2, 0.8))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(90,92,100), props = c(0.5, 0.5))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(80,85,108), props = c(0.6, 0.4))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(50,63,70), props = c(0.4, 0.6))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(80,90,100), props = c(0.5, 0.5))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(60,80,100), props = c(0.2, 0.8))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(76,85,90), props = c(0.5, 0.5))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(70,100,110), props = c(0.4, 0.6))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(90,100,110), props = c(0.4, 0.6))), class = "symbolic_histogram"),
+    vctrs::new_vctr(list(list(breaks = c(78,88,100), props = c(0.2, 0.8))), class = "symbolic_histogram")
+    )
+df_cardiological_hist <- data.frame(
+    individuo = c(1:11)
+)
+
+
+df_cardiological_hist$pulso_cardiaco <- pulso_cardiaco
+df_cardiological_hist$presion_sistolica <- presion_sistolica
+df_cardiological_hist$presion_diastolica <- presion_diastolica
+
+
+# Se procede a preparar los datos 
+df_cardiological_hist <- df_cardiological_hist %>%
+    mutate(individuo = as.character(individuo)) %>%
+    group_by(individuo) %>%
+    mutate(
+        pulso_cardiaco = uniform_histogram(pulso_cardiaco), 
+        presion_sistolica = median(presion_sistolica), 
+        presion_diastolica = median(presion_diastolica)
+    ) %>%
+    ungroup()
+
+
+
+
+```
+
+```{r analisis}
+# Se procede a probar la funcion de regresion 
+tree_cardiological <- hist_tree(formula = pulso_cardiaco ~ presion_diastolica + presion_sistolica, data = df_cardiological_hist %>% dplyr::select(-individuo), minsize = 1)
+tree_cardiological$tree
+
+# Se procede a ver el error
+(df_cardiological_hist <- df_cardiological_hist %>%
+    mutate(grupo = case_when(
+        presion_sistolica <= 110 ~ "1",
+        presion_diastolica > 100 ~ "2", 
+        presion_sistolica > 144.375 ~ "3", 
+        .default = "4")) %>%
+    group_by(grupo) %>%
+    mutate(
+        pred = mean(pulso_cardiaco)
+
+    ))
+
+(df_cardiological_hist <- df_cardiological_hist %>%
+    mutate(grupo = case_when(
+        presion_sistolica <= 110 ~ "1",
+        .default = "2"
+        )) %>%
+    group_by(grupo) %>%
+    mutate(
+        pred = mean(pulso_cardiaco)
+
+    ))
+mse <- c()
+
+colores <- c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c")
+df_plot_cardiological <- data.frame(grupo = character(), 
+    x = numeric(), 
+    xend = numeric(), 
+    y = numeric(), 
+    yend = numeric()
+    )
+for(i in 1:2){
+    df_cardiological_hist_aux <- df_cardiological_hist %>% 
+        filter(grupo == i)
+    bins <- length(df_cardiological_hist_aux$pred[1]$breaks)
+    breaks <- df_cardiological_hist_aux$pred[1]$breaks
+    cdf <- cumsum(rep(0.1, bins-1))
+    df_plot_cardiological <- df_plot_cardiological %>%
+        rbind(
+            data.frame(
+                grupo = as.character(i), 
+                x = sort(c(breaks[1:(bins -1)], breaks[2:(bins -1)])),
+                xend =  sort(c(breaks[2:(bins)], breaks[2:(bins -1)])),
+                y = sort(c(cdf, cdf[1:(length(cdf)-1)])),
+                yend = sort(c(cdf[2:length(cdf)], cdf))
+            )
+        )
+
+    mse <- c(mse, mse_histogram(df_cardiological_hist_aux$pulso_cardiaco, df_cardiological_hist_aux$pred[1]))
+}
+sqrt(mean(mse))
+promedio_pulso <- mean(df_cardiological_hist$pulso_cardiaco)
+# Se estima el promedio de la distribucion 
+
+promedio <- (promedio_pulso$breaks + lag(promedio_pulso$breaks))/2
+promedio <- sum(0.1*promedio[!is.na(promedio)])
+promedio <- list(breaks = rep(promedio, 11), props = rep(0.1,10))
+y <- df_cardiological_hist$pred
+pred <- promedio_pulso
+
+omega <- 1 - mean(mse_histogram_vec(df_cardiological_hist$pred, df_cardiological_hist$pulso_cardiaco))/mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio))
+
+r_squared <- 1 - mean(mse_histogram_vec(df_cardiological_hist$pred, df_cardiological_hist$pulso_cardiaco))/mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio_pulso))
+
+df_plot_cardiological %>%
+    ggplot(aes(x = x, xend = xend, y = y, yend = yend, color = grupo)) +
+    geom_segment(size = 1.5) + 
+    #geom_xspline() +
+    geom_point(aes(x = xend), size = 3) +
+    scale_color_manual(values = colores) + 
+    theme_minimal() + 
+    labs(x = "Pulso cardíaco", y = "CDF") +
+    theme(text = element_text(size = 20), axis.text = element_text(size = 20), legend.text = element_text(size = 20) ) +
+    labs(color = "Grupo")
+ggsave("./plots/cardiological_cdf.pdf")
+
+```
+
+```{r calculo_brito}
+1-(-0.7452+1)*mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio))/mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio_pulso))
+
+1-(-0.7533+1)*mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio))/mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio_pulso))
+```
+
+
+```{r}
+df <- data.frame(minsize = numeric(), r_squared = numeric(), rmse = numeric(), omega = numeric())
+for(i in 2){
+    cat("Min size")
+    cat(i)
+    df <- rbind(df, cv_tree(formula = pulso_cardiaco ~ presion_diastolica + presion_sistolica, data = df_cardiological_hist, minsize = i))
+}
+write.xlsx(file = "./res/cardiological_minsize.xlsx", df)
+```

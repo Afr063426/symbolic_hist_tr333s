@@ -1,0 +1,121 @@
+---
+title: "Untitled"
+format: html
+---
+
+
+```{r}
+# Se ejecuta el codigo set up
+source("./R/hist_tree.r")
+library(openxlsx)
+# Se procede a cargar los datos
+
+```
+
+
+
+```{r}
+
+library(HistDAWass)
+library(RSDA)
+
+# Se procede a pasar esto al paquete RSDA
+columnas <- c("Ozone.Conc.ppb", "Temperature.C",  "Solar.Radiation.WattM2", "Wind.Speed.mSec")
+df_OzoneFull <- data.frame(individuo = as.character(1:78))
+
+
+for(i in 1:length(columnas)){
+    #x <- list()
+    for(j in 1:78){
+        
+     breaks <- OzoneFull@M[j,i][[1]]@x
+     props <- OzoneFull@M[j,i][[1]]@p-lag(OzoneFull@M[j,i][[1]]@p)
+     props <- props[!is.na(props)]
+     out <- list(
+        breaks = breaks, 
+        props = props
+    )
+        if(j == 1){
+            x <- vctrs::new_vctr(list(out), class = "symbolic_histogram")
+        }else{
+            x_aux <- vctrs::new_vctr(list(out), class = "symbolic_histogram") 
+            x <- c(x, x_aux)
+        }
+    }
+    assign(columnas[i], x)
+    #df_OzoneFull[columnas[i]] <- x
+}
+df_OzoneFull$Ozone.Conc.ppb <- Ozone.Conc.ppb
+df_OzoneFull$Temperature.C <- Temperature.C
+df_OzoneFull$Solar.Radiation.WattM2 <- Solar.Radiation.WattM2
+df_OzoneFull$Wind.Speed.mSec <- Wind.Speed.mSec
+    
+
+df_OzoneFull <- df_OzoneFull %>%
+    mutate(individuo = as.character(individuo)) %>%
+    group_by(individuo) %>%
+    mutate(
+        Temperature.C = median(Temperature.C), 
+        Solar.Radiation.WattM2 = median(Solar.Radiation.WattM2),
+        Wind.Speed.mSec = median(Wind.Speed.mSec)
+        
+    ) %>%
+    ungroup()
+
+```
+
+
+
+```{r}
+df <- data.frame(minsize = numeric(), r_squared = numeric(), rmse = numeric(), omega = numeric())
+for(i in 2:10){
+    cat("Min size")
+    cat(i)
+    df <- rbind(df, cv_tree(formula =  Ozone.Conc.ppb ~ Temperature.C + Solar.Radiation.WattM2 + Wind.Speed.mSec, data = df_OzoneFull,  minsize = i))
+}
+write.xlsx(file = "./res/ozono_minsize.xlsx", df)
+```
+
+
+```{r}
+tree_OzoneFull <- hist_tree(formula =  Ozone.Conc.ppb ~ Temperature.C + Solar.Radiation.WattM2 + Wind.Speed.mSec, data = df_OzoneFull %>% dplyr::select(-individuo),  minsize = 3)
+
+df_tree <- tree_OzoneFull$tree
+df_tree <- df_tree %>%
+    filter(TERMINAL == "LEAF")
+
+
+promedio <-  df_OzoneFull[, "Ozone.Conc.ppb"] %>% 
+    summarise(promedio = mean(Ozone.Conc.ppb))
+promedio <- promedio$promedio
+promedio_billard <- (promedio$breaks + lag(promedio$breaks))/2
+promedio_billard <- sum(promedio$props[[1]][1]*promedio_billard[!is.na(promedio_billard)])
+promedio_billard <- list(breaks = rep(promedio_billard, length(promedio$breaks)), props = rep(promedio$props[1], length(promedio$props)))
+
+
+for(j in 1:nrow(df_tree)){
+      
+      if(j == 1){
+        df <- subset(df_OzoneFull, eval(parse(text = df_tree$FILTER[j])))
+        df$node <- j
+
+      }else{
+        df_aux <- subset(df_OzoneFull, eval(parse(text = df_tree$FILTER[j])))
+        df_aux$node <- j
+        df <- rbind(df, df_aux)
+      }
+    }
+df_estimador <- df %>%
+      group_by(node) %>%
+      summarise(estimador =  mean(Ozone.Conc.ppb))
+
+df <- df %>%
+    left_join(df_estimador, by = "node")
+
+
+(r_squared <- 1 - mean(mse_histogram_vec(pred = df$estimador, y = df$Ozone.Conc.ppb))/mean(mse_histogram(df$Ozone.Conc.ppb, promedio)))
+(rmse <- sqrt(mean(mse_histogram_vec(pred = df$estimador, y = df$Ozone.Conc.ppb))))
+
+    
+(omega <- 1 - mean(mse_histogram_vec(pred = df$estimador, y = df$Ozone.Conc.ppb))/mean(mse_histogram(df$estimador, promedio_billard)))
+```
