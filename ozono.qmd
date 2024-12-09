@@ -1,10 +1,15 @@
 ---
-title: "Untitled"
-format: html
+title: "Ejemplo datos ozono"
+format:
+  html:
+      theme: solar
+self-contained: true
+author: "Joshua Cervantes Artavia"
+date:  "`r format(Sys.time(), '%d %B, %Y')`"
 ---
 
-
 ```{r}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 # Se ejecuta el codigo set up
 source("./R/hist_tree.r")
 library(openxlsx)
@@ -69,18 +74,21 @@ df_OzoneFull <- df_OzoneFull %>%
 ```{r}
 df <- data.frame(minsize = numeric(), r_squared = numeric(), rmse = numeric(), omega = numeric())
 for(i in 2:10){
-    cat("Min size")
-    cat(i)
+     cat("Min size")
+     cat(i)
     df <- rbind(df, cv_tree(formula =  Ozone.Conc.ppb ~ Temperature.C + Solar.Radiation.WattM2 + Wind.Speed.mSec, data = df_OzoneFull,  minsize = i))
 }
 write.xlsx(file = "./res/ozono_minsize.xlsx", df)
+```
+```{r}
+df
 ```
 
 
 ```{r}
 tree_OzoneFull <- hist_tree(formula =  Ozone.Conc.ppb ~ Temperature.C + Solar.Radiation.WattM2 + Wind.Speed.mSec, data = df_OzoneFull %>% dplyr::select(-individuo),  minsize = 3)
 
-df_tree <- tree_OzoneFull$tree
+(df_tree <- tree_OzoneFull$tree)
 df_tree <- df_tree %>%
     filter(TERMINAL == "LEAF")
 
@@ -119,3 +127,4 @@ df <- df %>%
     
 (omega <- 1 - mean(mse_histogram_vec(pred = df$estimador, y = df$Ozone.Conc.ppb))/mean(mse_histogram(df$estimador, promedio_billard)))
 ```
+

@@ -1,12 +1,15 @@
 ---
-title: "Datos cardiologicos"
-format: html
+title: "Ejemplo datos pulso cardíaco"
+format:
+  html:
+      theme: solar
+self-contained: true
 author: "Joshua Cervantes Artavia"
-date: 20-10-2024
+date:  "`r format(Sys.time(), '%d %B, %Y')`"
 ---
 
-
 ```{r}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 # Se ejecuta el codigo set up
 source("./R/hist_tree.r")
 # Se procede a cargar los datos
@@ -84,6 +87,19 @@ df_cardiological_hist <- df_cardiological_hist %>%
 
 ```
 
+
+```{r}
+df <- data.frame(minsize = numeric(), r_squared = numeric(), rmse = numeric(), omega = numeric())
+for(i in 1:3){
+    df <- rbind(df, cv_tree(formula = pulso_cardiaco ~ presion_diastolica + presion_sistolica, data = df_cardiological_hist, minsize = i))
+}
+openxlsx::write.xlsx(file = "./res/cardiological_minsize.xlsx", df)
+```
+
+```{r}
+df
+```
+
 ```{r analisis}
 # Se procede a probar la funcion de regresion 
 tree_cardiological <- hist_tree(formula = pulso_cardiaco ~ presion_diastolica + presion_sistolica, data = df_cardiological_hist %>% dplyr::select(-individuo), minsize = 1)
@@ -102,16 +118,16 @@ tree_cardiological$tree
 
     ))
 
-(df_cardiological_hist <- df_cardiological_hist %>%
-    mutate(grupo = case_when(
-        presion_sistolica <= 110 ~ "1",
-        .default = "2"
-        )) %>%
-    group_by(grupo) %>%
-    mutate(
-        pred = mean(pulso_cardiaco)
+# (df_cardiological_hist <- df_cardiological_hist %>%
+#     mutate(grupo = case_when(
+#         presion_sistolica <= 110 ~ "1",
+#         .default = "2"
+#         )) %>%
+#     group_by(grupo) %>%
+#     mutate(
+#         pred = mean(pulso_cardiaco)
 
-    ))
+#     ))
 mse <- c()
 
 colores <- c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c")
@@ -121,7 +137,7 @@ df_plot_cardiological <- data.frame(grupo = character(),
     y = numeric(), 
     yend = numeric()
     )
-for(i in 1:2){
+for(i in 1:4){
     df_cardiological_hist_aux <- df_cardiological_hist %>% 
         filter(grupo == i)
     bins <- length(df_cardiological_hist_aux$pred[1]$breaks)
@@ -150,9 +166,9 @@ promedio <- list(breaks = rep(promedio, 11), props = rep(0.1,10))
 y <- df_cardiological_hist$pred
 pred <- promedio_pulso
 
-omega <- 1 - mean(mse_histogram_vec(df_cardiological_hist$pred, df_cardiological_hist$pulso_cardiaco))/mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio))
+# omega <- 1 - mean(mse_histogram_vec(df_cardiological_hist$pred, df_cardiological_hist$pulso_cardiaco))/mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio))
 
-r_squared <- 1 - mean(mse_histogram_vec(df_cardiological_hist$pred, df_cardiological_hist$pulso_cardiaco))/mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio_pulso))
+# r_squared <- 1 - mean(mse_histogram_vec(df_cardiological_hist$pred, df_cardiological_hist$pulso_cardiaco))/mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio_pulso))
 
 df_plot_cardiological %>%
     ggplot(aes(x = x, xend = xend, y = y, yend = yend, color = grupo)) +
@@ -169,18 +185,10 @@ ggsave("./plots/cardiological_cdf.pdf")
 ```
 
 ```{r calculo_brito}
+#Ajuste modelo Brito
 1-(-0.7452+1)*mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio))/mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio_pulso))
 
 1-(-0.7533+1)*mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio))/mean(mse_histogram(df_cardiological_hist$pulso_cardiaco, promedio_pulso))
 ```
 
 
-```{r}
-df <- data.frame(minsize = numeric(), r_squared = numeric(), rmse = numeric(), omega = numeric())
-for(i in 2){
-    cat("Min size")
-    cat(i)
-    df <- rbind(df, cv_tree(formula = pulso_cardiaco ~ presion_diastolica + presion_sistolica, data = df_cardiological_hist, minsize = i))
-}
-write.xlsx(file = "./res/cardiological_minsize.xlsx", df)
-```
